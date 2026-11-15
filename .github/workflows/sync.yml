@@ -1,0 +1,33 @@
+# Copies the Aurora site from the healthero-site repository, where it is edited.
+# Runs every fifteen minutes, and on demand from the Actions tab (Run workflow).
+name: Sync Aurora site
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Healthero/healthero-site
+          path: _source
+      - name: Copy the page and the design tokens
+        run: |
+          mkdir -p design-system
+          sed 's|href="../design-system/tokens.css"|href="design-system/tokens.css"|' _source/aurora/index.html > index.html
+          cp _source/design-system/tokens.css design-system/tokens.css
+          rm -rf _source
+      - name: Publish if anything changed
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "healthero-sync"
+            git config user.email "actions@users.noreply.github.com"
+            git add -A
+            git commit -m "Sync Aurora site from healthero-site"
+            git push
+          fi
